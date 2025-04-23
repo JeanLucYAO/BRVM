@@ -1,0 +1,66 @@
+---
+title: "Data from BRVM"
+author: "JL"
+date: "2025-04-23"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load BRVM package
+```{r}
+library(BRVM)
+library(dplyr)
+library(ggplot2)
+library(googlesheets4)
+```
+
+## Get historical data for my stocks
+```{r}
+TTLC <- BRVM_get(.symbol = "TTLC", .from = "2025-03-03", .to = Sys.Date()) # Total CI
+SIBC <- BRVM_get(.symbol = "SIBC", .from = "2025-03-20", .to = Sys.Date()) # SIB CI
+PALC <- BRVM_get(.symbol = "PALC", .from = "2025-04-14", .to = Sys.Date()) # Palm CI
+ETIT <- BRVM_get(.symbol = "ETIT", .from = "2025-04-22", .to = Sys.Date()) # Ecobank Togo
+```
+
+## Tidy data
+```{r}
+TTLC <- TTLC %>%
+  select(Date, Close) %>%
+  rename(TTLC = Close)
+
+SIBC <- SIBC %>%
+  select(Date, Close) %>%
+  rename(SIBC = Close)
+
+PALC <- PALC %>%
+  select(Date, Close) %>%
+  rename(PALC = Close)
+
+ETIT <- ETIT %>%
+  select(Date, Close) %>%
+  rename(ETIT = Close)
+
+df <- TTLC %>%
+  full_join(SIBC, by = "Date") %>%
+  full_join(PALC, by = "Date") %>%
+  full_join(ETIT, by = "Date") %>%
+  arrange(desc(Date))
+```
+
+
+## Validate data & export to gsheet
+```{r}
+df %>% nrow() == length(unique(df$Date))
+df %>% nrow() == length(unique(c(TTLC$Date, SIBC$Date, PALC$Date, ETIT$Date)))
+
+# Export to Google Sheets
+sheet_write(df,
+            ss = "https://docs.google.com/spreadsheets/d/1d4Bmn_MELBS1jNcL_w07cJAj6gsqpEFASa4giWDmUJk/edit?gid=0#gid=0",
+            sheet = "Data")
+```
+
